@@ -6,7 +6,6 @@ pragma solidity >=0.5.0 <0.9.0;
 // EIP-20: ERC-20 Token Standard
 // https://eips.ethereum.org/EIPS/eip-20
 // -----------------------------------------
-
 interface ERC20Interface {
     function totalSupply() external view returns (uint256);
 
@@ -42,19 +41,20 @@ interface ERC20Interface {
     );
 }
 
+// The Cryptos Token Contract
 contract DzikToken is ERC20Interface {
-    string public name = "DZIK";
-    string public symbol = "DZK";
+    string public name = "DzikToken";
+    string public symbol = "DZIK";
     uint256 public decimals = 0;
-    uint256 public override totalSupply; //override cause totalSupply was definied in ERC20Interface
+    uint256 public override totalSupply;
 
     address public founder;
-    mapping(address => uint256) public balances; // balances[0x1234..] = 100;
+    mapping(address => uint256) public balances;
+    // balances[0x1111...] = 100;
 
-    mapping(address => mapping(address => uint256)) allowed; //accounts allowed to withdraw from main token account, first address is a token holder
+    mapping(address => mapping(address => uint256)) allowed;
 
-    // 0x1111 (owner) allows 0x2222 (spender) -- 100 tokens
-    // mapping'll be: allowed[0x1111][0x2222] = 100;
+    // allowed[0x111][0x222] = 100;
 
     constructor() {
         totalSupply = 1000000;
@@ -71,16 +71,15 @@ contract DzikToken is ERC20Interface {
         return balances[tokenOwner];
     }
 
-    //virtual means that function can change their behavior in another contract by overwriting
     function transfer(address to, uint256 tokens)
         public
         virtual
         override
         returns (bool success)
     {
-        //require(balances[msg.sender] => tokens);
+        require(balances[msg.sender] >= tokens);
 
-        balances[to] += tokens; //balances of recipent after sending tokens
+        balances[to] += tokens;
         balances[msg.sender] -= tokens;
         emit Transfer(msg.sender, to, tokens);
 
@@ -93,7 +92,6 @@ contract DzikToken is ERC20Interface {
         override
         returns (uint256)
     {
-        //function'll return how many tokens owner allowed the spender to withdraw
         return allowed[tokenOwner][spender];
     }
 
@@ -102,9 +100,9 @@ contract DzikToken is ERC20Interface {
         override
         returns (bool success)
     {
-        //set by the owner, the aprroval for allowance to withdraw that X tokens amount
-        require(balances[msg.sender] >= 0);
+        require(balances[msg.sender] >= tokens);
         require(tokens > 0);
+
         allowed[msg.sender][spender] = tokens;
 
         emit Approval(msg.sender, spender, tokens);
@@ -115,16 +113,13 @@ contract DzikToken is ERC20Interface {
         address from,
         address to,
         uint256 tokens
-    ) public override returns (bool success) {
-        //this f called by spender, allowed to transfer tokens from owner to spender the amount set in the allowance function
+    ) public virtual override returns (bool success) {
         require(allowed[from][to] >= tokens);
         require(balances[from] >= tokens);
 
-        balances[from] -= tokens; //balances of owner after withdraw
+        balances[from] -= tokens;
         balances[to] += tokens;
-        allowed[from][to] -= tokens; //allowed mapping variable of
-
-        emit Transfer(from, to, tokens);
+        allowed[from][to] -= tokens;
 
         return true;
     }
